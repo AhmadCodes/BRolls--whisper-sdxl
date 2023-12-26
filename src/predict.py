@@ -70,6 +70,8 @@ if __name__ == "__main__":
 #%%
 if __name__ == "__main__":
 
-    prompt = "a photo of a cat"
+    prompt = "a cat jumping over a fence"
     output = predictor.predict(prompt)
     output.save("output.png")
+
+# %%
