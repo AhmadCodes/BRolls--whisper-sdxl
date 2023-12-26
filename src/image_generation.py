@@ -95,7 +95,7 @@ def generate_image(prompt):
     starting_image = None
 
 
-    n_steps = 30
+    n_steps = 40
     high_noise_frac = 0.7
 
     if starting_image:  # If image_url is provided, run only the refiner pipeline
@@ -132,6 +132,7 @@ def generate_image(prompt):
 #%%
 
 if __name__ == "__main__":
-    prompt = "a painting of a cat"
+    prompt = "a cat jumping over a dog"
     image = generate_image(prompt)
     image.save("test.png")
+# %%
