@@ -44,8 +44,9 @@ class ModelHandler:
             torch_dtype=torch.float16, variant="fp16", use_safetensors=True, add_watermarker=False,
             cache_dir=CACHE_DIR
         )
-        base_pipe = base_pipe.to("cuda", silence_dtype_warnings=True)
+        # base_pipe = base_pipe.to("cuda", silence_dtype_warnings=True)
         base_pipe.enable_xformers_memory_efficient_attention()
+        base_pipe.enable_model_cpu_offload()
         return base_pipe
 
     def load_refiner(self):
@@ -57,8 +58,9 @@ class ModelHandler:
             torch_dtype=torch.float16, variant="fp16", use_safetensors=True, add_watermarker=False,
             cache_dir=CACHE_DIR
         )
-        refiner_pipe = refiner_pipe.to("cuda", silence_dtype_warnings=True)
+        # refiner_pipe = refiner_pipe.to("cuda", silence_dtype_warnings=True)
         refiner_pipe.enable_xformers_memory_efficient_attention()
+        refiner_pipe.enable_model_cpu_offload()
         return refiner_pipe
 
     def load_models(self):
@@ -90,8 +92,6 @@ def generate_image(prompt):
     Generate an image from text using your Model
     '''
 
-
-
     starting_image = None
 
 
@@ -111,6 +111,7 @@ def generate_image(prompt):
             prompt=prompt,
             negative_prompt=NEGATIVE_PROMPT,
             denoising_end=high_noise_frac,
+            num_inference_steps=n_steps,
             output_type="latent",
         ).images
 
@@ -118,6 +119,7 @@ def generate_image(prompt):
             output = MODELS.refiner(
                 prompt=prompt,
                 num_inference_steps=n_steps,
+                denoising_start=high_noise_frac,
                 image=image,
             ).images
         except RuntimeError as err:
@@ -125,6 +127,7 @@ def generate_image(prompt):
                 "error": f"RuntimeError: {err}, Stack Trace: {err.__traceback__}",
                 "refresh_worker": True
             }
+
 
     return output[0]
 
