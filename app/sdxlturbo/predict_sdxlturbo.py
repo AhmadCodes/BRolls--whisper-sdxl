@@ -32,9 +32,12 @@ class Predictor:
         self.pipe.to("cuda")
 
         self.pipe.enable_xformers_memory_efficient_attention()
+        self.pipe.enable_model_cpu_offload()
 
     @torch.inference_mode()
-    def predict(self, prompt, num_inference_steps=35):
+    def predict(self, prompt,
+                negative_prompt=NEGATIVE_PROMPT,
+                num_inference_steps=3):
         """Run a single prediction on the model"""
         seed = int.from_bytes(os.urandom(2), "big")
         print(f"Using seed: {seed}")
@@ -44,7 +47,7 @@ class Predictor:
         output = self.pipe(
             prompt=prompt,
             negative_prompt= NEGATIVE_PROMPT,
-            num_inference_steps=4, 
+            num_inference_steps=num_inference_steps, 
             guidance_scale=0.0
         )
 
@@ -60,9 +63,8 @@ if __name__ == "__main__":
 if __name__ == "__main__":
 
     prompt = "a cat jumping over a dog"
-    prompt = "A cinematic shot of a baby racoon wearing an intricate italian priest robe."
+    # prompt = "A cinematic shot of a baby racoon wearing an intricate italian priest robe."
 
-    output = predictor.predict(prompt)
+    output = predictor.predict(prompt, num_inference_steps=3)
     output.save("output.png")
 
-# %%
