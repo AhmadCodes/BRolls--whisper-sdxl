@@ -15,6 +15,7 @@ RUN python3.11 /cache_models.py && \
     rm /cache_models.py
 
 # Add src files (Worker Template)
-ADD src .
+# ADD src .
+ADD app .
 
 CMD python3.11 -u /rp_handler.py
