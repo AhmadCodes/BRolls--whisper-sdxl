@@ -4,12 +4,14 @@ from typing import List
 
 from diffusers import AutoPipelineForText2Image, LCMScheduler
 import torch
-
+import os
+curr_file_dir = os.path.dirname(os.path.realpath(__file__))
+cache_dir = os.path.join(curr_file_dir, "../..", "cache")
 
 # MODEL_ID = "Lykon/dreamshaper-7"
 # MODEL_ID = "stablediffusionapi/reliberatev2"
-MODEL_ID = "lykon/dreamshaper-8-lcm"
-MODEL_CACHE = "/workspace/.cache/"
+MODEL_ID = "Lykon/dreamshaper-8-lcm"
+MODEL_CACHE = cache_dir
 SAFETY_MODEL_ID = "CompVis/stable-diffusion-safety-checker"
 NEGATIVE_PROMPT = "((text)), worst quality, normal quality, low quality, low res, blurry, text, watermark, logo, banner, extra digits, cropped, jpeg artifacts, signature, username, error, sketch ,duplicate, ugly, monochrome, horror, geometry, mutation, disgusting"
 NEGATIVE_PROMPT = "((deformed)), ((limbs cut off)), ((quotes)), ((unrealistic)), ((extra fingers)), ((deformed hands)), extra limbs, disfigured, blurry, bad anatomy, absent limbs, blurred, watermark, disproportionate, grainy, signature, cut off, missing legs, missing arms, poorly drawn face, bad face, fused face, cloned face, worst face, three crus, extra crus, fused crus, worst feet, three feet, fused feet, fused thigh, three thigh, fused thigh, extra thigh, worst thigh, missing fingers, extra fingers, ugly fingers, long fingers, horn, extra eyes, amputation, disconnected limbs, glitch, low contrast, noisy"
@@ -17,7 +19,9 @@ NEGATIVE_PROMPT = "((deformed)), ((limbs cut off)), ((quotes)), ((unrealistic)),
 # %%
 
 
-CACHE_DIR = "/workspace/.cache/"
+
+#%%
+CACHE_DIR = cache_dir
 
 
 class Predictor:
@@ -37,6 +41,7 @@ class Predictor:
         self.pipe = AutoPipelineForText2Image.from_pretrained(model_id,
                                                               torch_dtype=torch.float16,
                                                             #   variant="fp16",
+                                                            cache_dir=cache_dir,
                                                               )
         self.pipe.scheduler = LCMScheduler.from_config(
             self.pipe.scheduler.config)
@@ -98,10 +103,12 @@ if __name__ == "__main__":
 
         prompt = dummy["description"]
         guidance_scale = 0.0
-        output = predictor.predict(prompt, num_inference_steps=30,
+        output = predictor.predict(prompt, num_inference_steps=50,
                                    negative_prompt=NEGATIVE_PROMPT,
                                    guidance_scale=guidance_scale)
-        output.save(f"static/output_DSLCM_{dummy['start']}_{dummy['end']}_GS{guidance_scale}.png")
+        if not os.path.exists("./static"):
+            os.makedirs("./static")
+        output.save(f"./static/output_DSLCM_{dummy['start']}_{dummy['end']}_GS{guidance_scale}.png")
 
 
 # %%

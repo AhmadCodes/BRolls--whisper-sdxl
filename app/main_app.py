@@ -52,17 +52,45 @@ S3_CLIENT = get_s3_client()
 
 
 
-def chunk_level_transcript(word_level_transcript, chunk_size=5):
+def chunk_level_transcript(word_level_transcript, chunk_size_s=3):
     chunked_ts = []
-    for i in range(0, len(word_level_transcript), chunk_size):
-        chunk = word_level_transcript[i:i+chunk_size]
-        chunk_words = [word['word'] for word in chunk]
-        chunk_words_str = " ".join(chunk_words)
+    start_t = 0
+    started = False
+    end_t = 0
+    chunk = []
+    
+    for i in range(0, len(word_level_transcript)):
+        chunk.append(word_level_transcript[i])
+        if not started:
+            start_t = float(word_level_transcript[i]['start'])
+            started = True
+        end_t = float(word_level_transcript[i]['end'])
+        delta = end_t - start_t
+        if delta >= chunk_size_s:
+            chunk_words_str = " ".join([w['word'] for w in chunk])
+            chunk_start = chunk[0]['start']
+            chunk_end = chunk[-1]['end']
+            chunked_ts.append(
+                {"start": chunk_start, "end": chunk_end, "segment": chunk_words_str})
+            started = False
+            chunk = []
+            
+    if len(chunk) > 0:
+        chunk_words_str = " ".join([w['word'] for w in chunk])
         chunk_start = chunk[0]['start']
         chunk_end = chunk[-1]['end']
         chunked_ts.append(
             {"start": chunk_start, "end": chunk_end, "segment": chunk_words_str})
     return chunked_ts
+
+def convert_to_srt(word_level_transcript):
+    srt = ""
+    for i, word in enumerate(word_level_transcript):
+        srt += f"{i + 1}\n"
+        srt += f"{word['start']} --> {word['end']}\n"
+        srt += f"{word['segment']}\n\n"
+    return srt
+
 
 
 # %%
@@ -162,16 +190,17 @@ def fetch_broll_description(wordlevel_info,
         "content-type": "application/json",
         "Authorization": "Bearer {}".format(openaiapi_key)}
 
-    chunk_level_transcript(wordlevel_info, chunk_size=5)
+    chunklevelinfo = chunk_level_transcript(wordlevel_info, chunk_size_s=5)
+    subtitles = convert_to_srt(chunklevelinfo)
 
     prompt_prefix = """{}
     
-    Given the timestamp information of segments of transcript of a video, generate very relevant stock image descriptions to insert as B-roll images.
+    Given the subtitles of a video, generate very relevant stock image descriptions to insert as B-roll images.
     The start and end timestamps of the B-roll images should perfectly match with the content that is spoken at that time.
     Strictly don't include any exact word or text labels to be depicted in the images.
     Don't make the timestamps of different illustrations overlap.
     Leave enough time gap between different B-Roll image appearances so that the original footage is also played as necessary.
-    Strictly output only JSON in the output using the format (BE CAREFUL NOT TO MISS ANY COMMAS, QUOTES OR SEMICOLONS ETC)-""".format(json.dumps(wordlevel_info))
+    Strictly output only JSON in the output using the format (BE CAREFUL NOT TO MISS ANY COMMAS, QUOTES OR SEMICOLONS ETC)-""".format(subtitles)
 
     sample = [
         {"description": "...", "start": "...", "end": "..."},
@@ -296,14 +325,9 @@ def upload_image_to_s3(image, bucket, s3_client):
 def pipeline(word_level_transcript,
              num_images=3,
              broll_image_steps=50,
-             SD_model="lykon/dreamshaper-8-lcm",
-             openaiapi_key=''
+             openaiapi_key=os.getenv("OPENAI_API_KEY"),
              ):
 
-    if sdxlpredictor.pipe._internal_dict['_name_or_path'] != SD_model:
-        sdxlpredictor.setup(model_id=SD_model)
-        print("Changed SD model to ",
-              sdxlpredictor.pipe._internal_dict['_name_or_path'])
 
     # Fetch B-roll descriptions
     broll_descriptions, err_msg = fetch_broll_description(word_level_transcript,
@@ -329,18 +353,7 @@ def pipeline(word_level_transcript,
 
 
 if __name__ == "__main__":
-    example_transcript = [
-        {"word": "Hello", "start": 0.0, "end": 1.0},
-        {"word": "World", "start": 1.0, "end": 2.0},
-        {"word": "This", "start": 2.0, "end": 3.0},
-        {"word": "is", "start": 3.0, "end": 4.0},
-        {"word": "a", "start": 4.0, "end": 5.0},
-        {"word": "test", "start": 5.0, "end": 6.0},
-        {"word": "transcript", "start": 6.0, "end": 7.0},
-        {"word": "for", "start": 7.0, "end": 8.0},
-        {"word": "the", "start": 8.0, "end": 9.0},
-        {"word": "pipeline", "start": 9.0, "end": 10.0}
-    ]
+    from example import example_transcript
 
     img_info = pipeline(example_transcript,
                         num_images=3,

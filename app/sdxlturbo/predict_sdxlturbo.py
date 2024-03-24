@@ -25,10 +25,12 @@ class Predictor:
         #     cache_dir=MODEL_CACHE,
         #     local_files_only=True,
         # )
-
+        
         self.pipe = AutoPipelineForText2Image.from_pretrained(MODEL_ID, 
                                                               torch_dtype=torch.float16,
-                                                              variant="fp16")
+                                                              variant="fp16",
+                                                              cache_dir=CACHE_DIR,
+                                                              )
         self.pipe.to("cuda")
 
         self.pipe.enable_xformers_memory_efficient_attention()

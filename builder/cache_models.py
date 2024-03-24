@@ -1,46 +1,33 @@
 # builder/model_fetcher.py
-
+#%%
 import torch
-from diffusers import StableDiffusionXLPipeline, StableDiffusionXLImg2ImgPipeline, AutoencoderKL
+from diffusers import AutoPipelineForText2Image, LCMScheduler
+import os
+curr_file_dir = os.path.dirname(os.path.realpath(__file__))
+cache_dir = os.path.join(curr_file_dir, "..", "cache")
 
+# MODEL_ID = "Lykon/dreamshaper-7"
+# MODEL_ID = "stablediffusionapi/reliberatev2"
+MODEL_ID = "Lykon/dreamshaper-8-lcm"
+MODEL_CACHE = cache_dir
 
-def fetch_pretrained_model(model_class, model_name, **kwargs):
+def fetch_pretrained_model():
     '''
-    Fetches a pretrained model from the HuggingFace model hub.
+    Fetch a pretrained model from the Hugging Face model hub.
     '''
-    max_retries = 3
-    for attempt in range(max_retries):
-        try:
-            return model_class.from_pretrained(model_name, **kwargs)
-        except OSError as err:
-            if attempt < max_retries - 1:
-                print(
-                    f"Error encountered: {err}. Retrying attempt {attempt + 1} of {max_retries}...")
-            else:
-                raise
+    pipe = AutoPipelineForText2Image.from_pretrained(MODEL_ID,
+                                                        torch_dtype=torch.float16,
+                                                    #   variant="fp16",
+                                                    cache_dir=cache_dir,
+                                                        )
+    pipe.scheduler = LCMScheduler.from_config(
+        pipe.scheduler.config)
 
+    pipe.to("cuda")
 
-def get_diffusion_pipelines():
-    '''
-    Fetches the Stable Diffusion XL pipelines from the HuggingFace model hub.
-    '''
-    common_args = {
-        "torch_dtype": torch.float16,
-        "variant": "fp16",
-        "use_safetensors": True
-    }
-
-    pipe = fetch_pretrained_model(StableDiffusionXLPipeline,
-                                  "stabilityai/stable-diffusion-xl-base-1.0", **common_args)
-    vae = fetch_pretrained_model(
-        AutoencoderKL, "madebyollin/sdxl-vae-fp16-fix", **{"torch_dtype": torch.float16}
-    )
-    print("Loaded VAE")
-    refiner = fetch_pretrained_model(StableDiffusionXLImg2ImgPipeline,
-                                     "stabilityai/stable-diffusion-xl-refiner-1.0", **common_args)
-
-    return pipe, refiner, vae
-
+    pipe.enable_xformers_memory_efficient_attention()
+    
 
 if __name__ == "__main__":
-    get_diffusion_pipelines()
+    fetch_pretrained_model()
+#%%
