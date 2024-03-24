@@ -19,13 +19,8 @@ def fetch_pretrained_model():
                                                         torch_dtype=torch.float16,
                                                     #   variant="fp16",
                                                     cache_dir=cache_dir,
-                                                        )
-    pipe.scheduler = LCMScheduler.from_config(
-        pipe.scheduler.config)
-
-    pipe.to("cuda")
-
-    pipe.enable_xformers_memory_efficient_attention()
+                                                    load_in_memory=False
+    )
     
 
 if __name__ == "__main__":
