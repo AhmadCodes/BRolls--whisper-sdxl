@@ -6,16 +6,11 @@
 # change_settings({"IMAGEMAGICK_BINARY": "/usr/bin/convert"})
 import uuid
 from io import BytesIO
-import random
 import boto3
 from dotenv import load_dotenv
-import ffmpeg
 import requests
 import json
-from pprint import pprint
-import numpy as np
-from PIL import Image
-import cv2
+
 try:
     # from sdxlturbo.predict_sdxlturbo import Predictor as SDXLPredictor
     from dreamshaper_lcm.predict_DS_LCM import Predictor as SDXLPredictor
