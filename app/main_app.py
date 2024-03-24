@@ -178,8 +178,9 @@ def fetch_broll_description(wordlevel_info,
         {"description": "...", "start": "...", "end": "..."}
     ]
 
-    prompt = prompt_prefix + json.dumps(sample) + """\nMake the start and end timestamps a minimum duration of more than 3 seconds.
-    Also, place them at the appropriate timestamp position where the relevant context is being spoken in the transcript. \nJSON:"""
+    prompt = prompt_prefix + json.dumps(sample) + f"""\nMake the start and end timestamps a minimum duration of more than 3 seconds.
+    Also, place them at the appropriate timestamp position where the relevant context is being spoken in the transcript. 
+    Be sure to only make {num_images} jsons. \nJSON:"""
 
     # Define the payload for the chat model
     messages = [
